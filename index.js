@@ -23,6 +23,12 @@ async function run() {
     const categoriesCollection = client
       .db("secondTuneDB")
       .collection("categories");
+
+    app.get("/categories", async (req, res) => {
+      const query = {};
+      const options = await categoriesCollection.find(query).toArray();
+      res.send(options);
+    });
   } finally {
   }
 }
