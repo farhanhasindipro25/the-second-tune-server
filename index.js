@@ -24,10 +24,20 @@ async function run() {
       .db("secondTuneDB")
       .collection("categories");
 
+    const usersCollection = client.db("secondTuneDB").collection("users");
+
+    // API for reading all product categories
     app.get("/categories", async (req, res) => {
       const query = {};
       const options = await categoriesCollection.find(query).toArray();
       res.send(options);
+    });
+
+    // API for saving new user to DB
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
     });
   } finally {
   }
