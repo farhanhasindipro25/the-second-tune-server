@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -26,12 +26,7 @@ async function run() {
 
     const usersCollection = client.db("secondTuneDB").collection("users");
 
-    // API for reading all product categories
-    app.get("/categories", async (req, res) => {
-      const query = {};
-      const options = await categoriesCollection.find(query).toArray();
-      res.send(options);
-    });
+    const productsCollection = client.db("secondTuneDB").collection("products");
 
     // API for saving new user to DB
     app.post("/users", async (req, res) => {
@@ -62,6 +57,21 @@ async function run() {
       const query = { email };
       const user = await usersCollection.findOne(query);
       res.send({ isSeller: user?.role === "Seller" });
+    });
+
+    // API for reading all product categories
+    app.get("/categories", async (req, res) => {
+      const query = {};
+      const options = await categoriesCollection.find(query).toArray();
+      res.send(options);
+    });
+
+    // API for reading a specific category as per it's ID
+    app.get("/categories/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const service = await categoriesCollection.findOne(query);
+      res.send(service);
     });
   } finally {
   }
