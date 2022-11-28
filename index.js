@@ -70,8 +70,16 @@ async function run() {
     app.get("/categories/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const service = await categoriesCollection.findOne(query);
-      res.send(service);
+      const category = await categoriesCollection.findOne(query);
+      res.send(category);
+    });
+
+    // API for adding a new product as per category
+    app.post("/products", async (req, res) => {
+      const product = req.body;
+      console.log(product);
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
     });
   } finally {
   }
