@@ -81,6 +81,17 @@ async function run() {
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
+
+    // API for reading all products of a specific category
+    app.get("/products", async (req, res) => {
+      let query = {};
+      if ((req, query.categoryId)) {
+        query = { categoryId: req.query.categoryId };
+      }
+      console.log(query);
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
   } finally {
   }
 }
