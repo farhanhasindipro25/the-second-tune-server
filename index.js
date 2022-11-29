@@ -87,6 +87,20 @@ async function run() {
       res.send(sellers);
     });
 
+    // API for verifying a seller
+    app.patch("/users/seller/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
     // API for deleting a specific seller
     app.delete("/users/seller/:id", async (req, res) => {
       const id = req.params.id;
