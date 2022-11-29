@@ -60,8 +60,15 @@ async function run() {
     // API for reading all users who are buyers
     app.get("/users/buyer", async (req, res) => {
       const query = { role: "Buyer" };
-      const users = await usersCollection.find(query).toArray();
-      res.send(users);
+      const buyers = await usersCollection.find(query).toArray();
+      res.send(buyers);
+    });
+
+    // API for reading all users who are sellers
+    app.get("/users/seller", async (req, res) => {
+      const query = { role: "Seller" };
+      const sellers = await usersCollection.find(query).toArray();
+      res.send(sellers);
     });
 
     // API for checking if a user is a Seller
