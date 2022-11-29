@@ -64,6 +64,14 @@ async function run() {
       res.send(buyers);
     });
 
+    // API for deleting a specific buyer
+    app.delete("/users/buyer/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // API for checking if a user is a Seller
     app.get("/users/seller/:email", async (req, res) => {
       const email = req.params.email;
