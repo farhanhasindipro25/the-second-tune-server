@@ -35,6 +35,12 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/users", async (req, res) => {
+      const query = {};
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // API for checking if a user is an Admin
     app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -49,6 +55,13 @@ async function run() {
       const query = { email };
       const user = await usersCollection.findOne(query);
       res.send({ isBuyer: user?.role === "Buyer" });
+    });
+
+    // API for reading all users who are buyers
+    app.get("/users/buyer", async (req, res) => {
+      const query = { role: "Buyer" };
+      const users = await usersCollection.find(query).toArray();
+      res.send(users);
     });
 
     // API for checking if a user is a Seller
