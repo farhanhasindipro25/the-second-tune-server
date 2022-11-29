@@ -28,6 +28,16 @@ async function run() {
 
     const productsCollection = client.db("secondTuneDB").collection("products");
 
+    const bookingsCollection = client.db("secondTuneDB").collection("bookings");
+
+    // API for adding a new booking of a product
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+
     // API for saving new user to DB
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -139,6 +149,15 @@ async function run() {
       if (req.query.categoryId) {
         query = { categoryId: req.query.categoryId };
       }
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
+
+    // API for reading added product information of a specific seller.
+    app.get("/products", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      console.log(query);
       const products = await productsCollection.find(query).toArray();
       res.send(products);
     });
