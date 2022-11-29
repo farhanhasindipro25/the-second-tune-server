@@ -64,6 +64,14 @@ async function run() {
       res.send(buyers);
     });
 
+    // API for checking if a user is a Seller
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "Seller" });
+    });
+
     // API for reading all users who are sellers
     app.get("/users/seller", async (req, res) => {
       const query = { role: "Seller" };
@@ -71,12 +79,12 @@ async function run() {
       res.send(sellers);
     });
 
-    // API for checking if a user is a Seller
-    app.get("/users/seller/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email };
-      const user = await usersCollection.findOne(query);
-      res.send({ isSeller: user?.role === "Seller" });
+    // API for deleting a specific seller
+    app.delete("/users/seller/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
     });
 
     // API for reading all product categories
@@ -104,11 +112,11 @@ async function run() {
 
     // API for reading all products of a specific category
     app.get("/products", async (req, res) => {
+      console.log(req.query.categoryId);
       let query = {};
-      if ((req, query.categoryId)) {
+      if (req.query.categoryId) {
         query = { categoryId: req.query.categoryId };
       }
-      console.log(query);
       const products = await productsCollection.find(query).toArray();
       res.send(products);
     });
