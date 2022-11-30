@@ -30,6 +30,23 @@ async function run() {
 
     const bookingsCollection = client.db("secondTuneDB").collection("bookings");
 
+    const wishListCollection = client.db("secondTuneDB").collection("wishlist");
+
+    // API for adding a product to wishlist
+    app.post("/wishlist", async (req, res) => {
+      const wishedProduct = req.body;
+      const result = await wishListCollection.insertOne(wishedProduct);
+      res.send(result);
+    });
+
+    // API for reading wishlist of a specific user via email
+    app.get("/wishlist", async (req, res) => {
+      const query = { buyerEmail: req.query.email };
+      // console.log(query);
+      const wished = await wishListCollection.find(query).toArray();
+      res.send(wished);
+    });
+
     // API for adding a new booking of a product
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
@@ -41,9 +58,9 @@ async function run() {
     // API for reading bookings of a specific user via email
     app.get("/bookings", async (req, res) => {
       const query = { buyerEmail: req.query.email };
-      console.log(query);
-      const sellers = await bookingsCollection.find(query).toArray();
-      res.send(sellers);
+      // console.log(query);
+      const buyers = await bookingsCollection.find(query).toArray();
+      res.send(buyers);
     });
 
     // API for deleting a specific booking
@@ -182,9 +199,23 @@ async function run() {
     app.get("/myProducts", async (req, res) => {
       const email = req.query.email;
       const query = { sellerEmail: email };
-      console.log(query);
+      // console.log(query);
       const products = await productsCollection.find(query).toArray();
       res.send(products);
+    });
+
+    // API for advertising a product
+    app.patch("/myProducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const ad = req.body.ad;
+      const query = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          ad: ad,
+        },
+      };
+      const result = await productsCollection.updateOne(query, updatedDoc);
+      res.send(result);
     });
   } finally {
   }
