@@ -61,6 +61,7 @@ async function run() {
       res.send(result);
     });
 
+    // API for reading all users
     app.get("/users", async (req, res) => {
       const query = {};
       const result = await usersCollection.find(query).toArray();
@@ -167,6 +168,14 @@ async function run() {
       }
       const products = await productsCollection.find(query).toArray();
       res.send(products);
+    });
+
+    // API for deleting a specific product
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
     });
 
     // API for reading added product information of a specific seller.
