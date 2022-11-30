@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -18,6 +19,24 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+function verifyJWT(req, res, next) {
+  // console.log("Token inside verifyJWT", req.headers.authorization);
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("Unauthorized Access");
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "Forbidden Access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 async function run() {
   try {
     const categoriesCollection = client
@@ -31,6 +50,20 @@ async function run() {
     const bookingsCollection = client.db("secondTuneDB").collection("bookings");
 
     const wishListCollection = client.db("secondTuneDB").collection("wishlist");
+
+    // API for reading JWT info.
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "5h",
+        });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "" });
+    });
 
     // API for adding a product to wishlist
     app.post("/wishlist", async (req, res) => {
@@ -56,9 +89,13 @@ async function run() {
     });
 
     // API for reading bookings of a specific user via email
-    app.get("/bookings", async (req, res) => {
-      const query = { buyerEmail: req.query.email };
-      // console.log(query);
+    app.get("/bookings", verifyJWT, async (req, res) => {
+      const buyerEmail = req.query.email;
+      const query = { buyerEmail };
+      const decodedEmail = req.decoded.email;
+      if (buyerEmail !== decodedEmail) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
       const buyers = await bookingsCollection.find(query).toArray();
       res.send(buyers);
     });
