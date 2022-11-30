@@ -38,6 +38,22 @@ async function run() {
       res.send(result);
     });
 
+    // API for reading bookings of a specific user via email
+    app.get("/bookings", async (req, res) => {
+      const query = { buyerEmail: req.query.email };
+      console.log(query);
+      const sellers = await bookingsCollection.find(query).toArray();
+      res.send(sellers);
+    });
+
+    // API for deleting a specific booking
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // API for saving new user to DB
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -154,9 +170,9 @@ async function run() {
     });
 
     // API for reading added product information of a specific seller.
-    app.get("/products", async (req, res) => {
+    app.get("/myProducts", async (req, res) => {
       const email = req.query.email;
-      const query = { email: email };
+      const query = { sellerEmail: email };
       console.log(query);
       const products = await productsCollection.find(query).toArray();
       res.send(products);
