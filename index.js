@@ -66,6 +66,20 @@ async function run() {
       next();
     };
 
+    // middleware for verifying a Buyer - Must be used after the verifyJWT middleware
+    const verifyBuyer = async (req, res, next) => {
+      // console.log("Inside verifyBuyer", req.decoded.email);
+
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const buyer = await usersCollection.findOne(query);
+
+      if (buyer?.role !== "Buyer") {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
+
     // API for creating a JWT
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
@@ -81,7 +95,7 @@ async function run() {
     });
 
     // API for adding a product to wishlist
-    app.post("/wishlist", async (req, res) => {
+    app.post("/wishlist", verifyJWT, verifyBuyer, async (req, res) => {
       const wishedProduct = req.body;
       const result = await wishListCollection.insertOne(wishedProduct);
       res.send(result);
