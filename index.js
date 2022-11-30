@@ -80,6 +80,20 @@ async function run() {
       next();
     };
 
+    // middleware for verifying a Admin - Must be used after the verifyJWT middleware
+    const verifyAdmin = async (req, res, next) => {
+      // console.log("Inside verifyAdmin", req.decoded.email);
+
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const admin = await usersCollection.findOne(query);
+
+      if (admin?.role !== "Admin") {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
+
     // API for creating a JWT
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
@@ -102,7 +116,7 @@ async function run() {
     });
 
     // API for reading wishlist of a specific user via email
-    app.get("/wishlist", async (req, res) => {
+    app.get("/wishlist", verifyJWT, async (req, res) => {
       const query = { buyerEmail: req.query.email };
       // console.log(query);
       const wished = await wishListCollection.find(query).toArray();
@@ -110,7 +124,7 @@ async function run() {
     });
 
     // API for adding a new booking of a product
-    app.post("/bookings", async (req, res) => {
+    app.post("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
       const booking = req.body;
       console.log(booking);
       const result = await bookingsCollection.insertOne(booking);
@@ -118,7 +132,7 @@ async function run() {
     });
 
     // API for reading bookings of a specific user via email
-    app.get("/bookings", verifyJWT, async (req, res) => {
+    app.get("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
       const buyerEmail = req.query.email;
       const query = { buyerEmail };
       const decodedEmail = req.decoded.email;
@@ -130,7 +144,7 @@ async function run() {
     });
 
     // API for deleting a specific booking
-    app.delete("/bookings/:id", async (req, res) => {
+    app.delete("/bookings/:id", verifyJWT, verifyBuyer, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await bookingsCollection.deleteOne(query);
@@ -175,7 +189,7 @@ async function run() {
     });
 
     // API for deleting a specific buyer
-    app.delete("/users/buyer/:id", async (req, res) => {
+    app.delete("/users/buyer/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
@@ -198,7 +212,7 @@ async function run() {
     });
 
     // API for verifying a seller
-    app.patch("/users/seller/:id", async (req, res) => {
+    app.patch("/users/seller/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const status = req.body.status;
       const query = { _id: ObjectId(id) };
@@ -212,12 +226,17 @@ async function run() {
     });
 
     // API for deleting a specific seller
-    app.delete("/users/seller/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const result = await usersCollection.deleteOne(query);
-      res.send(result);
-    });
+    app.delete(
+      "/users/seller/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+        const result = await usersCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
 
     // API for reading all product categories
     app.get("/categories", async (req, res) => {
