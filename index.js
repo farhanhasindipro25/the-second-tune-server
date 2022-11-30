@@ -19,6 +19,7 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+// middleware function to verify a JSON WEB TOKEN(JWT)
 function verifyJWT(req, res, next) {
   // console.log("Token inside verifyJWT", req.headers.authorization);
   const authHeader = req.headers.authorization;
@@ -51,7 +52,21 @@ async function run() {
 
     const wishListCollection = client.db("secondTuneDB").collection("wishlist");
 
-    // API for reading JWT info.
+    // middleware for verifying a seller - Must be used after the verifyJWT middleware
+    const verifySeller = async (req, res, next) => {
+      // console.log("Inside verifySeller", req.decoded.email);
+
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const seller = await usersCollection.findOne(query);
+
+      if (seller?.role !== "Seller") {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      next();
+    };
+
+    // API for creating a JWT
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
@@ -206,7 +221,7 @@ async function run() {
     });
 
     // API for adding a new product as per category
-    app.post("/products", async (req, res) => {
+    app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const product = req.body;
       console.log(product);
       const result = await productsCollection.insertOne(product);
@@ -225,7 +240,7 @@ async function run() {
     });
 
     // API for deleting a specific product
-    app.delete("/products/:id", async (req, res) => {
+    app.delete("/products/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(query);
@@ -242,7 +257,7 @@ async function run() {
     });
 
     // API for advertising a product
-    app.patch("/myProducts/:id", async (req, res) => {
+    app.patch("/myProducts/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const ad = req.body.ad;
       const query = { _id: ObjectId(id) };
