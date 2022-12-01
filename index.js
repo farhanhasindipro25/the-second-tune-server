@@ -3,6 +3,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -51,6 +52,8 @@ async function run() {
     const bookingsCollection = client.db("secondTuneDB").collection("bookings");
 
     const wishListCollection = client.db("secondTuneDB").collection("wishlist");
+
+    const paymentsCollection = client.db("secondTuneDB").collection("payments");
 
     // middleware for verifying a seller - Must be used after the verifyJWT middleware
     const verifySeller = async (req, res, next) => {
@@ -108,6 +111,46 @@ async function run() {
       res.status(403).send({ accessToken: "" });
     });
 
+    // API for creating payment intent for stripe
+    app.post(
+      "/create-payment-intent",
+      verifyJWT,
+      verifyBuyer,
+      async (req, res) => {
+        const booking = req.body;
+        const price = booking.sellingPrice;
+        const amount = price * 100;
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          currency: "usd",
+          amount: amount,
+          payment_method_types: ["card"],
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      }
+    );
+
+    // API for adding a new payment to the DB and updating the payment status to the bookings collection
+    app.post("/payments", verifyJWT, verifyBuyer, async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatedResult = await bookingsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(result);
+    });
+
     // API for adding a product to wishlist
     app.post("/wishlist", verifyJWT, verifyBuyer, async (req, res) => {
       const wishedProduct = req.body;
@@ -116,7 +159,7 @@ async function run() {
     });
 
     // API for reading wishlist of a specific user via email
-    app.get("/wishlist", verifyJWT, async (req, res) => {
+    app.get("/wishlist", verifyJWT, verifyBuyer, async (req, res) => {
       const query = { buyerEmail: req.query.email };
       // console.log(query);
       const wished = await wishListCollection.find(query).toArray();
@@ -141,6 +184,14 @@ async function run() {
       }
       const buyers = await bookingsCollection.find(query).toArray();
       res.send(buyers);
+    });
+
+    // API for reading a specific product booking information
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
     });
 
     // API for deleting a specific booking
@@ -278,6 +329,13 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // API for reading all advertised products of a user
+    app.get("/products", async (req, res) => {
+      const query = { ad: "ADVERTISED" };
+      const advertisedProducts = await productsCollection.find(query).toArray();
+      res.send(advertisedProducts);
     });
 
     // API for reading added product information of a specific seller.
