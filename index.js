@@ -137,17 +137,29 @@ async function run() {
       const payment = req.body;
       const result = await paymentsCollection.insertOne(payment);
       const id = payment.bookingId;
+      const productId = payment.productId;
       const filter = { _id: ObjectId(id) };
+      const productFilter = { productId: Object(productId) };
       const updatedDoc = {
         $set: {
           paid: true,
           transactionId: payment.transactionId,
         },
       };
-      const updatedResult = await bookingsCollection.updateOne(
+      const salesStatus = {
+        $set: {
+          sold: true,
+        },
+      };
+      const updatedResultBookings = await bookingsCollection.updateOne(
         filter,
         updatedDoc
       );
+      const updatedResultProducts = await productsCollection.updateOne(
+        productFilter,
+        salesStatus
+      );
+      // console.log(updatedResultProducts);
       res.send(result);
     });
 
